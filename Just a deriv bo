@@ -1,1 +1,289 @@
-bot
+<?xml version="1.0" encoding="UTF-8"?>
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <variables>
+    <variable id="base_stake">base_stake</variable>
+    <variable id="current_stake">current_stake</variable>
+    <variable id="martingale_level">martingale_level</variable>
+  </variables>
+
+  <!-- Main Trade Block -->
+  <block type="trade" id="trade_block" x="50" y="50">
+    <field name="NAME">RSI Confirmation Bot Fixed</field>
+    <statement name="SUBMARKET">
+      <block type="market">
+        <field name="MARKET">synthetic_index</field>
+        <field name="SUBMARKET">volatility_indices</field>
+        <field name="SYMBOL">1HZ100V</field>
+        <field name="TRADETYPE">digits</field>
+        <field name="DURATIONTYPE">t</field>
+        <field name="DURATION">5</field>
+        <field name="STAKE">0.35</field>
+      </block>
+    </statement>
+
+    <!-- Initialization -->
+    <statement name="INITIALIZATION">
+      <block type="variables_set">
+        <field name="VAR" id="base_stake">base_stake</field>
+        <value name="VALUE">
+          <block type="math_number">
+            <field name="NUM">0.35</field>
+          </block>
+        </value>
+        <next>
+          <block type="variables_set">
+            <field name="VAR" id="current_stake">current_stake</field>
+            <value name="VALUE">
+              <block type="variables_get">
+                <field name="VAR" id="base_stake">base_stake</field>
+              </block>
+            </value>
+            <next>
+              <block type="variables_set">
+                <field name="VAR" id="martingale_level">martingale_level</field>
+                <value name="VALUE">
+                  <block type="math_number">
+                    <field name="NUM">0</field>
+                  </block>
+                </value>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+
+    <!-- Before Purchase: RSI + Confirmation Logic -->
+    <statement name="BEFORE_PURCHASE">
+      <block type="controls_if">
+        <value name="IF0">
+          <block type="logic_operation">
+            <field name="OP">AND</field>
+            <value name="A">
+              <block type="logic_compare">
+                <field name="OP">&gt;</field>
+                <value name="A">
+                  <block type="last_digit_list_count">
+                    <value name="COUNT">
+                      <block type="math_number">
+                        <field name="NUM">7</field>
+                      </block>
+                    </value>
+                    <value name="VALUE">
+                      <block type="math_number">
+                        <field name="NUM">4</field>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <value name="B">
+                  <block type="indicator_rsi">
+                    <field name="PERIOD">14</field>
+                  </block>
+                </value>
+                <value name="B">
+                  <block type="math_number">
+                    <field name="NUM">70</field>
+                  </block>
+                </value>
+              </block>
+            </value>
+            <value name="B">
+              <block type="logic_compare">
+                <field name="OP">&gt;</field>
+                <value name="A">
+                  <block type="indicator_rsi">
+                    <field name="PERIOD">14</field>
+                  </block>
+                </value>
+                <value name="B">
+                  <block type="math_number">
+                    <field name="NUM">70</field>
+                  </block>
+                </value>
+              </block>
+            </value>
+          </block>
+        </value>
+        <statement name="DO0">
+          <block type="purchase">
+            <field name="PURCHASE">DIGITUNDER</field>
+            <field name="BARRIER">4</field>
+            <value name="AMOUNT">
+              <block type="variables_get">
+                <field name="VAR" id="current_stake">current_stake</field>
+              </block>
+            </value>
+          </block>
+        </statement>
+        <next>
+          <block type="controls_if">
+            <value name="IF0">
+              <block type="logic_operation">
+                <field name="OP">AND</field>
+                <value name="A">
+                  <block type="logic_compare">
+                    <field name="OP">&lt;</field>
+                    <value name="A">
+                      <block type="last_digit_list_count">
+                        <value name="COUNT">
+                          <block type="math_number">
+                            <field name="NUM">7</field>
+                          </block>
+                        </value>
+                        <value name="VALUE">
+                          <block type="math_number">
+                            <field name="NUM">5</field>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                    <value name="B">
+                      <block type="indicator_rsi">
+                        <field name="PERIOD">14</field>
+                      </block>
+                    </value>
+                    <value name="B">
+                      <block type="math_number">
+                        <field name="NUM">30</field>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <value name="B">
+                  <block type="logic_compare">
+                    <field name="OP">&lt;</field>
+                    <value name="A">
+                      <block type="indicator_rsi">
+                        <field name="PERIOD">14</field>
+                      </block>
+                    </value>
+                    <value name="B">
+                      <block type="math_number">
+                        <field name="NUM">30</field>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+              </block>
+            </value>
+            <statement name="DO0">
+              <block type="purchase">
+                <field name="PURCHASE">DIGITOVER</field>
+                <field name="BARRIER">4</field>
+                <value name="AMOUNT">
+                  <block type="variables_get">
+                    <field name="VAR" id="current_stake">current_stake</field>
+                  </block>
+                </value>
+              </block>
+            </statement>
+          </block>
+        </next>
+      </block>
+    </statement>
+
+    <!-- After Purchase: Martingale Logic -->
+    <statement name="AFTER_PURCHASE">
+      <block type="controls_if">
+        <value name="IF0">
+          <block type="contract_check_result">
+            <field name="CHECK">win</field>
+          </block>
+        </value>
+        <statement name="DO0">
+          <block type="variables_set">
+            <field name="VAR" id="current_stake">current_stake</field>
+            <value name="VALUE">
+              <block type="variables_get">
+                <field name="VAR" id="base_stake">base_stake</field>
+              </block>
+            </value>
+            <next>
+              <block type="variables_set">
+                <field name="VAR" id="martingale_level">martingale_level</field>
+                <value name="VALUE">
+                  <block type="math_number">
+                    <field name="NUM">0</field>
+                  </block>
+                </value>
+              </block>
+            </next>
+          </block>
+        </statement>
+        <statement name="ELSE">
+          <block type="controls_if">
+            <value name="IF0">
+              <block type="logic_compare">
+                <field name="OP">&lt;</field>
+                <value name="A">
+                  <block type="variables_get">
+                    <field name="VAR" id="martingale_level">martingale_level</field>
+                  </block>
+                </value>
+                <value name="B">
+                  <block type="math_number">
+                    <field name="NUM">5</field>
+                  </block>
+                </value>
+              </block>
+            </value>
+            <statement name="DO0">
+              <block type="math_change">
+                <field name="VAR" id="martingale_level">martingale_level</field>
+                <value name="DELTA">
+                  <block type="math_number">
+                    <field name="NUM">1</field>
+                  </block>
+                </value>
+                <next>
+                  <block type="variables_set">
+                    <field name="VAR" id="current_stake">current_stake</field>
+                    <value name="VALUE">
+                      <block type="math_arithmetic">
+                        <field name="OP">MULTIPLY</field>
+                        <value name="A">
+                          <block type="variables_get">
+                            <field name="VAR" id="current_stake">current_stake</field>
+                          </block>
+                        </value>
+                        <value name="B">
+                          <block type="math_number">
+                            <field name="NUM">2.1</field>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                  </block>
+                </next>
+              </block>
+            </statement>
+            <statement name="ELSE">
+              <block type="variables_set">
+                <field name="VAR" id="current_stake">current_stake</field>
+                <value name="VALUE">
+                  <block type="variables_get">
+                    <field name="VAR" id="base_stake">base_stake</field>
+                  </block>
+                </value>
+                <next>
+                  <block type="variables_set">
+                    <field name="VAR" id="martingale_level">martingale_level</field>
+                    <value name="VALUE">
+                      <block type="math_number">
+                        <field name="NUM">0</field>
+                      </block>
+                    </value>
+                  </block>
+                </next>
+              </block>
+            </statement>
+          </block>
+        </statement>
+        <next>
+          <block type="trade_again"/>
+        </next>
+      </block>
+    </statement>
+  </block>
+</xml>
